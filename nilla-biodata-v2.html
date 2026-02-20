@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NILLA.ai — Bio Data Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Dancing+Script:wght@500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, remove, onValue, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  // 🔥 REPLACE WITH YOUR FIREBASE CONFIG
+  const firebaseConfig = {
+    apiKey: "AIzaSyBr5LtEwkHDau2oUcSK0czVZH76qjdM6-8",
+    authDomain: "ap-cont.firebaseapp.com",
+    databaseURL: "https://ap-cont-default-rtdb.firebaseio.com",
+    projectId: "ap-cont",
+    storageBucket: "ap-cont.appspot.com",
+    messagingSenderId: "325531671266",
+    appId: "1:325531671266:web:9a0ffa629fc2d730c89cbb",
+    measurementId: "G-BK71M75BK3"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    window.fbSave = async (id, data) => {
+      await set(ref(db, `nilla/biodata/${id}`), { ...data, updatedAt: serverTimestamp() });
+      return true;
+    };
+    window.fbDelete = async (id) => {
+      await remove(ref(db, `nilla/biodata/${id}`));
+      return true;
+    };
+    window.fbListen = (cb) => {
+      onValue(ref(db, 'nilla/biodata'), snap => {
+        const d = snap.val() || {};
+        cb(Object.entries(d).map(([id,v]) => ({ id, ...v })));
+      });
+    };
+    window._fbOk = true;
+  } catch(e) {
+    window._fbOk = false;
+  }
+</script>
+
+<style>
+:root {
+  --bg:      #09111f;
+  --bg2:     #0e1a2e;
+  --bg3:     #132038;
+  --card:    #0f1d33;
+  --border:  rgba(0,212,255,.10);
+  --border2: rgba(0,212,255,.28);
+  --cyan:    #00d4ff;
+  --teal:    #00e5c3;
+  --purple:  #7c5cbf;
+  --lav:     #a78bfa;
+  --txt:     #e2e8f0;
+  --muted:   #64748b;
+  --dim:     #94a3b8;
+  --danger:  #f43f5e;
+  --success: #22c55e;
+  --warn:    #f59e0b;
+  --r: 14px;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:var(--bg); color:var(--txt);
+  font-family:'Outfit',sans-serif; min-height:100vh;
+  overflow-x:hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 90% 5%,  rgba(0,212,255,.055)  0,transparent 60%),
+    radial-gradient(ellipse 55% 55% at 5%  90%,  rgba(124,92,191,.06)  0,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(0,229,195,.025)  0,transparent 70%);
+}
+
+/* ──────── NAV ──────── */
+nav {
+  position:sticky; top:0; z-index:200;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; height:62px;
+  background:rgba(9,17,31,.94);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(24px);
+}
+.nav-logo {
+  font-family:'Cinzel',serif; font-size:1.1rem; letter-spacing:.06em;
+  background:linear-gradient(90deg,var(--purple),var(--cyan),var(--teal));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.nav-right { display:flex; align-items:center; gap:12px; }
+.nav-tag {
+  font-size:.68rem; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--cyan); border:1px solid rgba(0,212,255,.3);
+  padding:3px 11px; border-radius:20px; font-weight:600;
+}
+.fb-pill {
+  display:flex; align-items:center; gap:6px;
+  font-size:.7rem; color:var(--muted);
+  padding:4px 11px; border-radius:20px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+}
+.fb-pill .dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--warn);
+  animation:glow-p 2s infinite;
+}
+.fb-pill.ok .dot  { background:var(--success); }
+.fb-pill.err .dot { background:var(--danger); }
+@keyframes glow-p {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(1.5)}
+}
+
+/* ──────── LAYOUT ──────── */
+.app { display:flex; height:calc(100vh - 62px); position:relative; z-index:1; }
+
+/* ──────── SIDEBAR ──────── */
+.sidebar {
+  width:272px; flex-shrink:0;
+  background:var(--bg2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.sb-top {
+  padding:16px 16px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.sb-title { font-family:'Cinzel',serif; font-size:.82rem; color:var(--dim); letter-spacing:.04em; }
+.sb-badge {
+  background:linear-gradient(135deg,var(--cyan),var(--teal));
+  color:#09111f; font-size:.68rem; font-weight:700;
+  padding:2px 8px; border-radius:10px; min-width:22px; text-align:center;
+}
+.sb-search {
+  margin:12px 12px 6px;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; display:flex; align-items:center; gap:8px; padding:8px 12px;
+}
+.sb-search input {
+  background:none; border:none; outline:none;
+  color:var(--txt); font-size:.82rem; flex:1; font-family:'Outfit',sans-serif;
+}
+.sb-search input::placeholder { color:var(--muted); }
+.sb-search svg { width:14px; height:14px; stroke:var(--muted); flex-shrink:0; }
+
+.person-list { flex:1; overflow-y:auto; padding:6px 10px 6px; }
+.person-list::-webkit-scrollbar { width:3px; }
+.person-list::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+.p-card {
+  padding:10px 12px; border-radius:11px; cursor:pointer;
+  margin-bottom:5px; border:1px solid transparent;
+  transition:all .2s; display:flex; align-items:center; gap:11px;
+  animation:slide-r .3s ease both;
+}
+@keyframes slide-r { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
+.p-card:hover { background:var(--bg3); border-color:var(--border); }
+.p-card.active { background:rgba(0,212,255,.09); border-color:rgba(0,212,255,.28); }
+
+/* sidebar avatar — now shows real photo or initials */
+.p-thumb {
+  width:38px; height:38px; border-radius:50%;
+  object-fit:cover; flex-shrink:0;
+  border:2px solid rgba(0,212,255,.2);
+}
+.p-thumb-init {
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.88rem; font-weight:700; color:#fff; flex-shrink:0;
+}
+.p-info { flex:1; min-width:0; }
+.p-name { font-size:.83rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-sub  { font-size:.7rem; color:var(--muted); margin-top:2px; }
+.p-del-btn {
+  opacity:0; transition:opacity .2s;
+  background:none; border:none; cursor:pointer;
+  color:var(--danger); padding:4px; border-radius:6px; flex-shrink:0;
+}
+.p-card:hover .p-del-btn { opacity:1; }
+.p-del-btn:hover { background:rgba(244,63,94,.15); }
+.p-del-btn svg { width:13px; height:13px; }
+
+.sb-add {
+  margin:10px;
+  background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,229,195,.09));
+  border:1px solid var(--border2); border-radius:11px; padding:11px;
+  color:var(--cyan); font-family:'Outfit',sans-serif;
+  font-size:.84rem; font-weight:600; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:all .22s;
+}
+.sb-add:hover { background:rgba(0,212,255,.22); box-shadow:0 0 22px rgba(0,212,255,.18); }
+
+/* ──────── MAIN ──────── */
+.main { flex:1; overflow-y:auto; padding:28px 32px; }
+.main::-webkit-scrollbar { width:4px; }
+.main::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* Welcome */
+.welcome {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; height:100%; gap:18px; text-align:center;
+}
+.welcome-logo {
+  font-family:'Cinzel',serif; font-size:3.5rem; font-weight:700;
+  background:linear-gradient(90deg,var(--purple),var(--cyan),var(--teal));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+.welcome p { color:var(--muted); font-size:.88rem; max-width:340px; line-height:1.75; }
+.btn-primary {
+  background:linear-gradient(135deg,var(--cyan),var(--teal));
+  border:none; color:#09111f; font-weight:700; font-size:.88rem;
+  padding:12px 30px; border-radius:25px; cursor:pointer;
+  font-family:'Outfit',sans-serif;
+  box-shadow:0 0 26px rgba(0,212,255,.32);
+  transition:transform .2s,box-shadow .2s;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 38px rgba(0,212,255,.55); }
+
+/* Profile */
+.profile-view { animation:fade-up .35s ease both; }
+@keyframes fade-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+.stats-strip {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px;
+}
+.stat-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--r); padding:15px 18px; text-align:center;
+  transition:all .22s;
+}
+.stat-box:hover { border-color:var(--border2); transform:translateY(-2px); }
+.stat-num {
+  font-family:'Cinzel',serif; font-size:1.55rem; font-weight:700;
+  background:linear-gradient(135deg,var(--cyan),var(--teal));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.stat-label { font-size:.7rem; color:var(--muted); margin-top:3px; }
+
+/* Hero card */
+.profile-hero {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--r);
+  padding:26px 30px; display:flex; align-items:center; gap:26px;
+  margin-bottom:18px; position:relative; overflow:hidden;
+}
+.profile-hero::before {
+  content:''; position:absolute; top:-50px; right:-50px;
+  width:200px; height:200px; border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.07),transparent 70%);
+}
+.hero-photo {
+  width:88px; height:88px; border-radius:50%; object-fit:cover; flex-shrink:0;
+  border:3px solid rgba(0,212,255,.35);
+  box-shadow:0 0 24px rgba(0,212,255,.2);
+}
+.hero-photo-init {
+  width:88px; height:88px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.9rem; font-weight:700; color:#fff;
+  box-shadow:0 0 0 3px rgba(0,212,255,.3),0 0 22px rgba(0,212,255,.15);
+}
+.hero-info { flex:1; }
+.hero-name {
+  font-family:'Cinzel',serif; font-size:1.55rem; font-weight:600;
+  background:linear-gradient(90deg,var(--txt),var(--cyan));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.hero-role { color:var(--dim); font-size:.88rem; margin-top:4px; }
+.hero-tags { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.htag {
+  font-size:.68rem; padding:3px 10px; border-radius:12px;
+  border:1px solid; font-weight:500; letter-spacing:.03em;
+}
+.hero-btns { display:flex; gap:10px; align-items:center; }
+.btn-edit {
+  background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,229,195,.09));
+  border:1px solid var(--border2); color:var(--cyan);
+  padding:9px 20px; border-radius:25px; cursor:pointer;
+  font-family:'Outfit',sans-serif; font-size:.82rem; font-weight:500;
+  display:flex; align-items:center; gap:6px; transition:all .2s;
+}
+.btn-edit:hover { background:rgba(0,212,255,.24); box-shadow:0 0 16px rgba(0,212,255,.22); }
+.btn-del-profile {
+  background:rgba(244,63,94,.12); border:1px solid rgba(244,63,94,.3);
+  color:var(--danger); padding:9px 20px; border-radius:25px; cursor:pointer;
+  font-family:'Outfit',sans-serif; font-size:.82rem; font-weight:500;
+  display:flex; align-items:center; gap:6px; transition:all .2s;
+}
+.btn-del-profile:hover { background:rgba(244,63,94,.22); }
+
+/* Info grid */
+.info-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(275px,1fr));
+  gap:14px; margin-bottom:16px;
+}
+.info-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--r); padding:18px 20px; transition:border-color .2s;
+}
+.info-card:hover { border-color:var(--border2); }
+.ic-title {
+  font-size:.7rem; text-transform:uppercase; letter-spacing:.1em;
+  color:var(--cyan); font-weight:600; margin-bottom:12px;
+  display:flex; align-items:center; gap:7px;
+}
+.ic-title svg { width:13px; height:13px; }
+.ir { display:flex; justify-content:space-between; align-items:flex-start; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.ir:last-child { border-bottom:none; }
+.ir-l { font-size:.76rem; color:var(--muted); }
+.ir-v { font-size:.8rem; font-weight:500; text-align:right; max-width:58%; word-break:break-all; }
+
+/* ──────── MODAL ──────── */
+.overlay {
+  display:none; position:fixed; inset:0; z-index:300;
+  background:rgba(0,0,0,.72); backdrop-filter:blur(10px);
+  align-items:center; justify-content:center;
+}
+.overlay.open { display:flex; }
+.modal {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:20px; width:min(720px,96vw); max-height:92vh;
+  overflow-y:auto; padding:30px;
+  animation:modal-pop .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+.modal::-webkit-scrollbar { width:4px; }
+.modal::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+@keyframes modal-pop {
+  from{opacity:0;transform:scale(.93) translateY(22px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+.modal-hd {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:26px;
+}
+.modal-title {
+  font-family:'Cinzel',serif; font-size:1.15rem; font-weight:600;
+  background:linear-gradient(90deg,var(--cyan),var(--teal));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.modal-x {
+  background:none; border:none; color:var(--muted); cursor:pointer;
+  width:32px; height:32px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.modal-x:hover { background:rgba(255,255,255,.09); color:var(--txt); }
+
+/* Image upload zone */
+.img-zone {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; padding:18px; border-radius:12px;
+  border:2px dashed var(--border2); cursor:pointer;
+  margin-bottom:20px; transition:all .22s; position:relative;
+  min-height:130px; background:var(--bg3);
+}
+.img-zone:hover { border-color:var(--cyan); background:rgba(0,212,255,.05); }
+.img-zone.has-img { border-style:solid; padding:10px; }
+.img-preview {
+  width:90px; height:90px; border-radius:50%; object-fit:cover;
+  border:3px solid rgba(0,212,255,.4);
+  box-shadow:0 0 20px rgba(0,212,255,.2);
+}
+.img-zone-text { font-size:.8rem; color:var(--dim); text-align:center; line-height:1.6; }
+.img-zone-icon { width:36px; height:36px; color:var(--cyan); opacity:.7; }
+.img-clear-btn {
+  position:absolute; top:8px; right:8px;
+  background:rgba(244,63,94,.2); border:1px solid rgba(244,63,94,.4);
+  color:var(--danger); border-radius:50%; width:26px; height:26px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:.9rem; font-weight:700; transition:all .2s;
+}
+.img-clear-btn:hover { background:rgba(244,63,94,.4); }
+#imgInput { display:none; }
+
+/* Form sections */
+.fs { margin-bottom:22px; }
+.fs-title {
+  font-size:.7rem; text-transform:uppercase; letter-spacing:.1em;
+  color:var(--cyan); font-weight:600; margin-bottom:13px;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.span2 { grid-column:span 2; }
+
+.field label {
+  display:block; font-size:.73rem; color:var(--dim);
+  margin-bottom:5px; font-weight:500;
+}
+.field input, .field select, .field textarea {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; color:var(--txt);
+  font-family:'Outfit',sans-serif; font-size:.84rem;
+  padding:10px 13px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,212,255,.1);
+}
+.field select option { background:var(--bg2); }
+.field textarea { resize:vertical; min-height:76px; }
+
+.form-actions {
+  display:flex; gap:12px; justify-content:flex-end; margin-top:26px;
+  padding-top:18px; border-top:1px solid var(--border);
+}
+.btn-cancel {
+  background:none; border:1px solid var(--border); color:var(--dim);
+  padding:10px 22px; border-radius:25px; cursor:pointer;
+  font-family:'Outfit',sans-serif; font-size:.84rem; transition:all .2s;
+}
+.btn-cancel:hover { border-color:var(--border2); color:var(--txt); }
+.btn-save {
+  background:linear-gradient(135deg,var(--cyan),var(--teal));
+  border:none; color:#09111f; font-weight:700; font-size:.84rem;
+  padding:10px 28px; border-radius:25px; cursor:pointer;
+  font-family:'Outfit',sans-serif;
+  box-shadow:0 0 20px rgba(0,212,255,.28);
+  transition:all .2s; display:flex; align-items:center; gap:8px;
+}
+.btn-save:hover { box-shadow:0 0 34px rgba(0,212,255,.5); transform:translateY(-1px); }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:22px; right:22px; z-index:999;
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:12px; padding:12px 20px; font-size:.82rem;
+  display:flex; align-items:center; gap:10px;
+  transform:translateY(80px); opacity:0;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.ok  { border-color:rgba(34,197,94,.4); }
+.toast.ok  .td { background:var(--success); }
+.toast.err { border-color:rgba(244,63,94,.4); }
+.toast.err .td { background:var(--danger); }
+.td { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--warn); }
+
+/* Confirm modal */
+.confirm-box {
+  background:var(--bg2); border:1px solid rgba(244,63,94,.35);
+  border-radius:18px; padding:28px; width:min(380px,90vw); text-align:center;
+  animation:modal-pop .25s ease both;
+}
+.confirm-box h3 { font-family:'Cinzel',serif; font-size:1rem; margin-bottom:10px; }
+.confirm-box p { color:var(--muted); font-size:.84rem; margin-bottom:22px; line-height:1.6; }
+.confirm-btns { display:flex; gap:10px; justify-content:center; }
+
+/* Colors */
+.c0{background:linear-gradient(135deg,#7c5cbf,#60a5fa)}
+.c1{background:linear-gradient(135deg,#00d4ff,#00e5c3)}
+.c2{background:linear-gradient(135deg,#f59e0b,#f43f5e)}
+.c3{background:linear-gradient(135deg,#a78bfa,#ec4899)}
+.c4{background:linear-gradient(135deg,#10b981,#06b6d4)}
+.c5{background:linear-gradient(135deg,#f97316,#eab308)}
+
+.empty-sb { text-align:center; padding:38px 16px; color:var(--muted); font-size:.8rem; line-height:1.8; }
+
+/* Loading spinner */
+.spinner {
+  width:18px; height:18px; border:2px solid rgba(0,212,255,.3);
+  border-top-color:var(--cyan); border-radius:50%;
+  animation:spin .6s linear infinite; flex-shrink:0;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* Save indicator on btn */
+.btn-save.saving { opacity:.75; pointer-events:none; }
+
+@media(max-width:700px){
+  .sidebar{ width:220px; }
+  .stats-strip{ grid-template-columns:repeat(2,1fr); }
+  .form-grid{ grid-template-columns:1fr; }
+  .span2{ grid-column:span 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">NILLA.ai</div>
+  <div class="nav-right">
+    <span class="nav-tag">Bio Data Manager</span>
+    <div class="fb-pill" id="fbPill">
+      <span class="dot"></span>
+      <span id="fbTxt">Connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <span class="sb-title">All People</span>
+      <span class="sb-badge" id="sbCount">0</span>
+    </div>
+    <div class="sb-search">
+      <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/>
+      </svg>
+      <input id="searchQ" placeholder="Search…" oninput="renderList()">
+    </div>
+    <div class="person-list" id="personList"></div>
+    <button class="sb-add" onclick="openForm(null)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Add Person
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="mainArea">
+    <div class="welcome" id="welcomeView">
+      <div class="welcome-logo">Nilla</div>
+      <h2 style="font-family:'Cinzel',serif;font-size:1.15rem;color:var(--dim)">Bio Data Manager</h2>
+      <p>Store and manage detailed bio data with profile photos — synced live to Firebase.</p>
+      <button class="btn-primary" onclick="openForm(null)">+ Add First Person</button>
+    </div>
+    <div id="profileView" style="display:none"></div>
+  </main>
+</div>
+
+<!-- FORM MODAL -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="formTitle">Add Person</div>
+      <button class="modal-x" onclick="closeForm()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Image Upload -->
+    <div class="img-zone" id="imgZone" onclick="document.getElementById('imgInput').click()">
+      <svg class="img-zone-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div class="img-zone-text">Click to upload profile photo<br><span style="font-size:.72rem;opacity:.6">JPG, PNG, WEBP — converted to Base64</span></div>
+    </div>
+    <input type="file" id="imgInput" accept="image/*" onchange="handleImageUpload(this)">
+
+    <form id="bioForm" onsubmit="savePerson(event)">
+
+      <!-- Personal -->
+      <div class="fs">
+        <div class="fs-title">Personal Information</div>
+        <div class="form-grid">
+          <div class="field"><label>Full Name *</label><input name="fullName" required placeholder="e.g. Kasun Perera"></div>
+          <div class="field"><label>Date of Birth</label><input name="dob" type="date"></div>
+          <div class="field"><label>Gender</label>
+            <select name="gender">
+              <option value="">Select</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field"><label>Blood Group</label>
+            <select name="blood">
+              <option value="">Select</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+            </select>
+          </div>
+          <div class="field"><label>Nationality</label><input name="nationality" placeholder="Sri Lankan"></div>
+          <div class="field"><label>NIC / ID Number</label><input name="nic" placeholder="200012345678"></div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="fs">
+        <div class="fs-title">Contact Details</div>
+        <div class="form-grid">
+          <div class="field"><label>Email</label><input name="email" type="email" placeholder="email@example.com"></div>
+          <div class="field"><label>Phone</label><input name="phone" placeholder="+94 77 000 0000"></div>
+          <div class="field span2"><label>Address</label><input name="address" placeholder="No. 12, Main Street, Colombo 03"></div>
+          <div class="field"><label>City</label><input name="city" placeholder="Colombo"></div>
+          <div class="field"><label>Province</label><input name="province" placeholder="Western"></div>
+        </div>
+      </div>
+
+      <!-- Professional -->
+      <div class="fs">
+        <div class="fs-title">Professional Info</div>
+        <div class="form-grid">
+          <div class="field"><label>Job Title</label><input name="jobTitle" placeholder="Software Engineer"></div>
+          <div class="field"><label>Organization</label><input name="org" placeholder="NILLA Technologies"></div>
+          <div class="field"><label>Department</label><input name="dept" placeholder="Engineering"></div>
+          <div class="field"><label>Experience (yrs)</label><input name="experience" type="number" min="0" placeholder="3"></div>
+          <div class="field"><label>Status</label>
+            <select name="status">
+              <option>Active</option><option>Inactive</option>
+              <option>On Leave</option><option>Remote</option>
+            </select>
+          </div>
+          <div class="field"><label>Start Date</label><input name="startDate" type="date"></div>
+        </div>
+      </div>
+
+      <!-- Education -->
+      <div class="fs">
+        <div class="fs-title">Education</div>
+        <div class="form-grid">
+          <div class="field"><label>Highest Qualification</label><input name="qualification" placeholder="BSc Engineering"></div>
+          <div class="field"><label>Field of Study</label><input name="field" placeholder="Computer Science"></div>
+          <div class="field"><label>Institution</label><input name="institution" placeholder="University of Moratuwa"></div>
+          <div class="field"><label>Graduation Year</label><input name="gradYear" type="number" placeholder="2022"></div>
+        </div>
+      </div>
+
+      <!-- Extra -->
+      <div class="fs">
+        <div class="fs-title">Skills & Notes</div>
+        <div class="form-grid">
+          <div class="field span2"><label>Skills (comma separated)</label><input name="skills" placeholder="React, Python, Leadership, Design"></div>
+          <div class="field span2"><label>Notes</label><textarea name="notes" placeholder="Additional information…"></textarea></div>
+        </div>
+      </div>
+
+      <input type="hidden" id="editId">
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="closeForm()">Cancel</button>
+        <button type="submit" class="btn-save" id="saveBtn">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="M5 12l5 5L20 7"/>
+          </svg>
+          Save Record
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 style="color:var(--danger)">Delete Record?</h3>
+    <p>This will permanently delete the record from Firebase. This action cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-save" style="background:linear-gradient(135deg,#f43f5e,#e11d48);box-shadow:0 0 18px rgba(244,63,94,.3)"
+        id="confirmYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="td"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let records   = JSON.parse(localStorage.getItem('nilla_bios') || '[]');
+let activeId  = null;
+let fbOk      = false;
+let currentImgB64 = null;   // holds base64 of selected image
+let pendingDeleteId = null;
+
+// ══════════════════════════════════════════
+//  FIREBASE INIT
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (window.fbListen) {
+      try {
+        window.fbListen(data => {
+          records = data;
+          fbOk = true;
+          setFbPill('ok', 'Firebase Live');
+          localStorage.setItem('nilla_bios', JSON.stringify(records));
+          renderList();
+          if (activeId) {
+            const still = records.find(r => r.id === activeId);
+            if (still) showProfile(activeId); else clearProfile();
+          }
+        });
+      } catch(e) { setFbPill('err', 'Local Mode'); }
+    } else { setFbPill('err', 'Local Mode'); }
+  }, 1500);
+  renderList();
+  if (!records.length) {
+    document.getElementById('welcomeView').style.display = 'flex';
+    document.getElementById('profileView').style.display = 'none';
+  }
+});
+
+function setFbPill(cls, txt) {
+  document.getElementById('fbPill').className = 'fb-pill ' + cls;
+  document.getElementById('fbTxt').textContent = txt;
+}
+
+// ══════════════════════════════════════════
+//  IMAGE UPLOAD → BASE64
+// ══════════════════════════════════════════
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Compress / resize via canvas
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 400;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      currentImgB64 = canvas.toDataURL('image/jpeg', 0.82);
+      updateImgZone(currentImgB64);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateImgZone(src) {
+  const zone = document.getElementById('imgZone');
+  if (src) {
+    zone.innerHTML = `
+      <img src="${src}" class="img-preview" alt="preview">
+      <button class="img-clear-btn" onclick="clearImg(event)" title="Remove">✕</button>
+    `;
+    zone.classList.add('has-img');
+  } else {
+    zone.classList.remove('has-img');
+    zone.innerHTML = `
+      <svg class="img-zone-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div class="img-zone-text">Click to upload profile photo<br>
+        <span style="font-size:.72rem;opacity:.6">JPG, PNG, WEBP — converted to Base64</span>
+      </div>
+    `;
+    zone.onclick = () => document.getElementById('imgInput').click();
+  }
+}
+function clearImg(e) {
+  e.stopPropagation();
+  currentImgB64 = null;
+  updateImgZone(null);
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+const COLORS = ['c0','c1','c2','c3','c4','c5'];
+function colorFor(n) {
+  let h = 0; for (let c of String(n)) h = (h<<5)-h+c.charCodeAt(0);
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+function initials(n) {
+  return String(n).split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function thumbHtml(r, cls='p-thumb') {
+  return r.photo
+    ? `<img class="${cls}" src="${r.photo}" alt="">`
+    : `<div class="p-thumb-init ${colorFor(r.fullName||'')}">${initials(r.fullName||'?')}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  SIDEBAR LIST
+// ══════════════════════════════════════════
+function renderList() {
+  const q = document.getElementById('searchQ').value.toLowerCase();
+  const filtered = records.filter(r =>
+    (r.fullName||'').toLowerCase().includes(q) ||
+    (r.jobTitle||'').toLowerCase().includes(q)  ||
+    (r.org||'').toLowerCase().includes(q)
+  );
+  document.getElementById('sbCount').textContent = records.length;
+
+  const list = document.getElementById('personList');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-sb">${q ? 'No results found.' : 'No records yet.<br>Add someone!'}</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map((r, i) => `
+    <div class="p-card ${r.id===activeId?'active':''}" onclick="showProfile('${esc(r.id)}')"
+         style="animation-delay:${i*0.04}s">
+      ${thumbHtml(r)}
+      <div class="p-info">
+        <div class="p-name">${esc(r.fullName||'—')}</div>
+        <div class="p-sub">${esc(r.jobTitle||r.org||'No title')}</div>
+      </div>
+      <button class="p-del-btn" onclick="event.stopPropagation();askDelete('${esc(r.id)}')" title="Delete">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  PROFILE VIEW
+// ══════════════════════════════════════════
+function showProfile(id) {
+  activeId = id;
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  renderList();
+  document.getElementById('welcomeView').style.display = 'none';
+  document.getElementById('profileView').style.display = 'block';
+
+  const statusColor = {Active:'#22c55e',Inactive:'#ef4444','On Leave':'#f59e0b',Remote:'#60a5fa'}[r.status]||'#94a3b8';
+  const skills = r.skills ? r.skills.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const skillTags = skills.map(s=>`<span class="htag" style="border-color:rgba(0,212,255,.3);color:var(--cyan)">${esc(s)}</span>`).join('');
+  const statusTag = r.status ? `<span class="htag" style="border-color:${statusColor}44;color:${statusColor}">${r.status}</span>` : '';
+
+  let age = '—';
+  if (r.dob) { const d = Date.now()-new Date(r.dob); age = Math.floor(d/31557600000)+' yrs'; }
+
+  const heroPhoto = r.photo
+    ? `<img class="hero-photo" src="${r.photo}" alt="${esc(r.fullName)}">`
+    : `<div class="hero-photo-init ${colorFor(r.fullName||'')}">${initials(r.fullName||'?')}</div>`;
+
+  document.getElementById('profileView').innerHTML = `
+    <div class="profile-view">
+
+      <div class="stats-strip">
+        <div class="stat-box"><div class="stat-num">${records.length}</div><div class="stat-label">Total People</div></div>
+        <div class="stat-box"><div class="stat-num">${records.filter(x=>x.status==='Active').length}</div><div class="stat-label">Active</div></div>
+        <div class="stat-box"><div class="stat-num">${r.experience||'—'}</div><div class="stat-label">Experience yrs</div></div>
+        <div class="stat-box"><div class="stat-num">${age}</div><div class="stat-label">Age</div></div>
+      </div>
+
+      <div class="profile-hero">
+        ${heroPhoto}
+        <div class="hero-info">
+          <div class="hero-name">${esc(r.fullName||'—')}</div>
+          <div class="hero-role">${esc(r.jobTitle||'')}${r.org?' · '+esc(r.org):''}</div>
+          <div class="hero-tags">${statusTag}${skillTags}</div>
+        </div>
+        <div class="hero-btns">
+          <button class="btn-edit" onclick="openForm('${esc(r.id)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn-del-profile" onclick="askDelete('${esc(r.id)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="ic-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+            </svg>
+            Personal
+          </div>
+          ${ir('Date of Birth', r.dob||'—')}${ir('Age',age)}
+          ${ir('Gender',r.gender||'—')}${ir('Blood Group',r.blood||'—')}
+          ${ir('Nationality',r.nationality||'—')}${ir('NIC / ID',r.nic||'—')}
+        </div>
+        <div class="info-card">
+          <div class="ic-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.08 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Contact
+          </div>
+          ${ir('Email',r.email||'—')}${ir('Phone',r.phone||'—')}
+          ${ir('Address',r.address||'—')}${ir('City',r.city||'—')}
+          ${ir('Province',r.province||'—')}
+        </div>
+        <div class="info-card">
+          <div class="ic-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            Professional
+          </div>
+          ${ir('Job Title',r.jobTitle||'—')}${ir('Organization',r.org||'—')}
+          ${ir('Department',r.dept||'—')}${ir('Status',r.status||'—')}
+          ${ir('Experience',r.experience?r.experience+' yrs':'—')}${ir('Start Date',r.startDate||'—')}
+        </div>
+        <div class="info-card">
+          <div class="ic-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            Education
+          </div>
+          ${ir('Qualification',r.qualification||'—')}${ir('Field',r.field||'—')}
+          ${ir('Institution',r.institution||'—')}${ir('Grad Year',r.gradYear||'—')}
+        </div>
+      </div>
+
+      ${r.notes?`<div class="info-card" style="margin-bottom:16px">
+        <div class="ic-title">Notes</div>
+        <p style="font-size:.84rem;color:var(--dim);line-height:1.75">${esc(r.notes)}</p>
+      </div>`:''}
+    </div>
+  `;
+}
+
+function ir(label, val) {
+  return `<div class="ir"><span class="ir-l">${label}</span><span class="ir-v">${esc(val)}</span></div>`;
+}
+
+function clearProfile() {
+  activeId = null;
+  document.getElementById('profileView').style.display = 'none';
+  document.getElementById('welcomeView').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════
+//  FORM OPEN / CLOSE
+// ══════════════════════════════════════════
+function openForm(id) {
+  const form = document.getElementById('bioForm');
+  form.reset();
+  document.getElementById('editId').value = '';
+  document.getElementById('formTitle').textContent = 'Add Person';
+  currentImgB64 = null;
+  updateImgZone(null);
+
+  if (id) {
+    const r = records.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('formTitle').textContent = 'Edit Person';
+    document.getElementById('editId').value = id;
+    // Fill fields
+    ['fullName','dob','gender','blood','nationality','nic',
+     'email','phone','address','city','province',
+     'jobTitle','org','dept','experience','status','startDate',
+     'qualification','field','institution','gradYear','skills','notes'
+    ].forEach(k => { if (form.elements[k]) form.elements[k].value = r[k]||''; });
+    // Restore image
+    if (r.photo) { currentImgB64 = r.photo; updateImgZone(r.photo); }
+  }
+  document.getElementById('formOverlay').classList.add('open');
+}
+function closeForm() {
+  document.getElementById('formOverlay').classList.remove('open');
+  currentImgB64 = null;
+}
+
+// ══════════════════════════════════════════
+//  SAVE
+// ══════════════════════════════════════════
+async function savePerson(e) {
+  e.preventDefault();
+  const form = document.getElementById('bioForm');
+  const btn  = document.getElementById('saveBtn');
+
+  const data = {};
+  ['fullName','dob','gender','blood','nationality','nic',
+   'email','phone','address','city','province',
+   'jobTitle','org','dept','experience','status','startDate',
+   'qualification','field','institution','gradYear','skills','notes'
+  ].forEach(k => { data[k] = form.elements[k]?.value?.trim() || ''; });
+
+  data.photo = currentImgB64 || '';
+
+  const editId = document.getElementById('editId').value;
+  const id = editId || Date.now().toString();
+
+  // Loading state
+  btn.classList.add('saving');
+  btn.innerHTML = `<span class="spinner"></span> Saving…`;
+
+  try {
+    if (fbOk && window.fbSave) {
+      await window.fbSave(id, data);
+      toast('Saved to Firebase ✓', true);
+    } else {
+      const idx = records.findIndex(x => x.id === id);
+      if (idx > -1) records[idx] = { id, ...data };
+      else records.push({ id, ...data });
+      localStorage.setItem('nilla_bios', JSON.stringify(records));
+      renderList();
+      toast('Saved locally ✓', true);
+      if (activeId) showProfile(activeId);
+      else showProfile(id);
+    }
+  } catch(err) {
+    toast('Save failed!', false);
+  }
+
+  btn.classList.remove('saving');
+  btn.innerHTML = `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg> Save Record`;
+  closeForm();
+  if (!activeId) showProfile(id);
+}
+
+// ══════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════
+function askDelete(id) {
+  pendingDeleteId = id;
+  document.getElementById('confirmOverlay').classList.add('open');
+  document.getElementById('confirmYes').onclick = () => doDelete(id);
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  pendingDeleteId = null;
+}
+async function doDelete(id) {
+  closeConfirm();
+  if (fbOk && window.fbDelete) {
+    try { await window.fbDelete(id); toast('Deleted from Firebase', true); }
+    catch(e) { toast('Delete failed!', false); }
+  } else {
+    records = records.filter(x => x.id !== id);
+    localStorage.setItem('nilla_bios', JSON.stringify(records));
+    renderList();
+    toast('Record deleted', true);
+    if (activeId === id) clearProfile();
+  }
+  if (activeId === id) { activeId = null; clearProfile(); }
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function toast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.className = `toast ${ok?'ok':'err'} show`;
+  document.getElementById('toastMsg').textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ══════════════════════════════════════════
+//  OVERLAY CLICK TO CLOSE
+// ══════════════════════════════════════════
+['formOverlay','confirmOverlay'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) {
+      if (id==='formOverlay') closeForm();
+      else closeConfirm();
+    }
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeForm(); closeConfirm(); }
+});
+</script>
+</body>
+</html>
